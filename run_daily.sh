@@ -16,3 +16,9 @@ if "$PY" ndx_breadth.py >> "$LOG" 2>&1; then
 else
   "$PY" notify_discord.py --error "取数失败，旧数据已保留，详见 run.log" >> "$LOG" 2>&1
 fi
+
+# NYSE 恐慌指标 (新低/新高比)：数据日期有变化才发 Discord；失败发提醒
+echo "--- nyse_panic $(date '+%F %T') ---" >> "$LOG"
+if ! "$PY" nyse_panic.py --discord >> "$LOG" 2>&1; then
+  "$PY" -c "from notify_discord import post, webhook_url; post(webhook_url(), '⚠️ NYSE 恐慌指标更新失败，旧数据已保留，详见 run.log', None)" >> "$LOG" 2>&1
+fi

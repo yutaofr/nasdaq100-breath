@@ -14,6 +14,9 @@
 | `ndx_breadth_futu.py` | 牛牛 Python 自编指标（可选，不用牛牛可忽略；数据内嵌，更新后需手动重新粘贴） |
 | `run.log` | 运行日志 |
 | `.discord_webhook` | webhook 地址（权限 600，不要分享/提交） |
+| `nyse_panic.py` | NYSE 恐慌指标：`$NYLOW:$NYHGH`、涨跌家数比、`$NYMO`/`$NYSI`，配 SPY 与 MA/EMA(377)，见下方说明 |
+| `nyse_panic.csv` / `.png` | NYSE 恐慌指标最新数据 / 最新图 |
+| `cache_nyse/` | NYSE 个股日线缓存（约 90 MB，不提交；首次运行约 10 分钟建立，之后增量更新） |
 
 ## 成分股来源
 
@@ -47,6 +50,20 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.nasdaq100-breadth.da
 ./run_daily.sh
 # 只看消息不发送
 python3 notify_discord.py --dry-run
+```
+
+## NYSE 恐慌指标（新低/新高比）
+
+复刻 StockCharts 上 `$NYLOW:$NYHGH` 的四层图：涨跌家数比 → SPY 日线 + MA/EMA(377) → 新低/新高比 → McClellan `$NYSI`/`$NYMO`。比值飙升（≥20，罕见时到 50）代表极端恐慌、短期底部临近；回落到 5 以下视为安全。
+
+- 数据：用 Nasdaq 公开接口下载全部 NYSE 上市证券（含优先股、基金，约 2,650 只）的日线，自行计算涨跌家数和 52 周新高/新低（对比前 252 个交易日最高/最低价）。与 WSJ 公布的官方 NYSE 数字相比约为 92%，比值和走势一致。
+- 官方对照：每次运行同时取 WSJ Markets Diary 的官方 NYSE 读数，图上黑点和消息末行显示（盘中运行时为盘中数）。
+- `$NYMO` 用比例调整净上涨家数（与 StockCharts 相同），`$NYSI` 在图表窗口起点归零累加，绝对值与 StockCharts 不同，形态可比。
+- 每日由 `run_daily.sh` 在 NDX100 之后运行；数据日期有变化才发 Discord，失败发提醒。
+
+```bash
+python3 nyse_panic.py              # 更新 + 画图 + 打印结论
+python3 nyse_panic.py --no-update  # 只用缓存重画
 ```
 
 ## 已知限制
